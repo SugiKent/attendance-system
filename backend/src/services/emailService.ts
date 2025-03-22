@@ -3,6 +3,7 @@ import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
 import fs from 'fs';
 import path from 'path';
 import handlebars from 'handlebars';
+import logger from '../utils/logger';
 
 // Email options interface
 interface EmailOptions {
@@ -35,10 +36,10 @@ export const emailService = {
       // Create test account
       const testAccount = await nodemailer.createTestAccount();
       
-      console.log('Ethereal Email テストアカウント作成:');
-      console.log(`- ユーザー名: ${testAccount.user}`);
-      console.log(`- パスワード: ${testAccount.pass}`);
-      console.log(`- プレビューURL: https://ethereal.email/login`);
+      logger.info('Ethereal Email テストアカウント作成:');
+      logger.info(`- ユーザー名: ${testAccount.user}`);
+      logger.info(`- パスワード: ${testAccount.pass}`);
+      logger.info(`- プレビューURL: https://ethereal.email/login`);
       
       // Create transporter
       return nodemailer.createTransport({
@@ -51,7 +52,11 @@ export const emailService = {
         }
       });
     } catch (error) {
-      console.error('Ethereal Email アカウント作成エラー:', error);
+      logger.error('Ethereal Email アカウント作成エラー:', error);
+      logger.debug('Ethereal Email アカウント作成エラー詳細:', {
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       // Fallback to console output
       return null;
     }
@@ -60,7 +65,7 @@ export const emailService = {
   // Create production transporter using Amazon SES
   createProdTransport: () => {
     // Log SES configuration for debugging
-    console.log('SES設定情報:', {
+    logger.debug('SES設定情報:', {
       region: process.env.AWS_REGION,
       emailFrom: process.env.EMAIL_FROM || 'noreply@example.com'
     });
@@ -99,7 +104,7 @@ export const emailService = {
             }
           };
           
-          console.log('SES送信パラメータ:', JSON.stringify({
+          logger.debug('SES送信パラメータ:', JSON.stringify({
             Source: params.Source,
             Destination: params.Destination,
             Subject: params.Message.Subject.Data
@@ -108,7 +113,12 @@ export const emailService = {
           const command = new SendEmailCommand(params);
           return await sesClient.send(command);
         } catch (error) {
-          console.error('SES送信エラー詳細:', error);
+          logger.error('SES送信エラー詳細:', error);
+          logger.debug('SES送信エラー詳細情報:', {
+            options,
+            errorMessage: error instanceof Error ? error.message : 'Unknown error',
+            stack: error instanceof Error ? error.stack : undefined
+          });
           throw error;
         }
       }
@@ -193,7 +203,12 @@ export const emailService = {
       // Render template with data
       return template(templateData);
     } catch (error) {
-      console.error('Template rendering error:', error);
+      logger.error('Template rendering error:', error);
+      logger.debug('Template rendering error details:', {
+        templateName,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       return '';
     }
   },
@@ -214,9 +229,17 @@ export const emailService = {
         html: options.html
       };
       
-      console.log(`メール送信準備 (環境: ${process.env.NODE_ENV || 'undefined'}):`);
-      console.log(`- 宛先: ${options.to}`);
-      console.log(`- 件名: ${options.subject}`);
+      logger.info(`メール送信準備 (環境: ${process.env.NODE_ENV || 'undefined'}):`);
+      logger.info(`- 宛先: ${options.to}`);
+      logger.info(`- 件名: ${options.subject}`);
+      logger.debug('メール送信詳細:', {
+        to: options.to,
+        subject: options.subject,
+        from: from,
+        fromName: fromName,
+        hasText: !!options.text,
+        hasHtml: !!options.html
+      });
       
       // Send email based on environment
       if (process.env.NODE_ENV === 'development') {
@@ -226,39 +249,51 @@ export const emailService = {
         if (transporter) {
           // Send via Ethereal Email
           const info = await transporter.sendMail(mailOptions);
-          console.log('==========================================');
-          console.log('📧 メールプレビュー:');
-          console.log(nodemailer.getTestMessageUrl(info));
-          console.log('==========================================');
+          logger.info('==========================================');
+          logger.info('📧 メールプレビュー:');
+          const previewUrl = nodemailer.getTestMessageUrl(info);
+          logger.info(previewUrl || 'プレビューURLが利用できません');
+          logger.info('==========================================');
           return info;
         } else {
-          // Fallback to console output
-          console.log('==========================================');
-          console.log('📧 開発環境: メール送信をシミュレート');
-          console.log('==========================================');
-          console.log(`宛先: ${options.to}`);
-          console.log(`件名: ${options.subject}`);
-          console.log('------------------------------------------');
-          console.log('本文:');
-          console.log(options.html || options.text);
-          console.log('==========================================');
+          // Fallback to logger output
+          logger.info('==========================================');
+          logger.info('📧 開発環境: メール送信をシミュレート');
+          logger.info('==========================================');
+          logger.info(`宛先: ${options.to}`);
+          logger.info(`件名: ${options.subject}`);
+          logger.info('------------------------------------------');
+          logger.debug('本文:');
+          logger.debug(options.html || options.text || '');
+          logger.info('==========================================');
           return { messageId: 'dev-mode' };
         }
       } else {
         // Production: Use Amazon SES
-        console.log('本番環境: Amazon SESを使用してメール送信を試みます');
+        logger.info('本番環境: Amazon SESを使用してメール送信を試みます');
         const transporter = emailService.createProdTransport();
         try {
           const result = await transporter.sendMail(mailOptions);
-          console.log('SES送信成功:', result);
+          logger.info('SES送信成功:', result);
+          logger.debug('SES送信成功詳細:', { result });
           return result;
         } catch (error) {
-          console.error('SES送信失敗:', error);
+          logger.error('SES送信失敗:', error);
+          logger.debug('SES送信失敗詳細:', {
+            options: mailOptions,
+            errorMessage: error instanceof Error ? error.message : 'Unknown error',
+            stack: error instanceof Error ? error.stack : undefined
+          });
           throw error;
         }
       }
     } catch (error) {
-      console.error('Email sending error:', error);
+      logger.error('Email sending error:', error);
+      logger.debug('Email sending error details:', {
+        options,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       throw error;
     }
   },
@@ -271,7 +306,13 @@ export const emailService = {
     userId
   }: VerificationEmailParams): Promise<any> => {
     try {
-      console.log(`認証メール送信開始 - 宛先: ${to}, ユーザーID: ${userId}`);
+      logger.info(`認証メール送信開始 - 宛先: ${to}, ユーザーID: ${userId}`);
+      logger.debug('認証メール送信詳細:', {
+        to,
+        userId,
+        verificationToken,
+        baseUrl: process.env.FRONTEND_URL || 'http://localhost:3000'
+      });
       
       // Generate verification link
       const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
@@ -296,7 +337,13 @@ export const emailService = {
         html
       });
     } catch (error) {
-      console.error('Verification email sending error:', error);
+      logger.error('Verification email sending error:', error);
+      logger.debug('Verification email sending error details:', {
+        to,
+        userId,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       throw error;
     }
   }

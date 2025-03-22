@@ -4,6 +4,7 @@ import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import logger from './utils/logger';
 
 // Import routes
 import authRoutes from './routes/authRoutes';
@@ -43,21 +44,25 @@ export const prisma = new PrismaClient({
 
 // Prismaのイベントリスナーを設定
 prisma.$on('error', (e) => {
-  console.error('Prisma error:', e);
+  logger.error('Prisma error:', e);
 });
 
 prisma.$on('query', (e) => {
-  console.log('Prisma query:', e);
+  logger.debug('Prisma query:', e);
 });
 
 // データベース接続テスト
 async function testDatabaseConnection() {
   try {
-    console.log('Testing database connection...');
+    logger.info('Testing database connection...');
     await prisma.$connect();
-    console.log('Database connection successful');
+    logger.info('Database connection successful');
+    logger.debug('Database connection details:', { 
+      url: process.env.DATABASE_URL?.replace(/:[^:@]*@/, ':****@'),
+      provider: 'postgresql'
+    });
   } catch (error) {
-    console.error('Database connection failed:', error);
+    logger.error('Database connection failed:', error);
     // プロセスを終了しない - エラーをログに記録するだけ
   }
 }
@@ -125,7 +130,19 @@ const authLimiter = rateLimit({
 
 // Logging middleware
 app.use((req: Request, _res: Response, next: NextFunction) => {
-  console.log(`${req.method} ${req.path}`);
+  logger.http(`${req.method} ${req.path}`);
+  // Always call debug - the logger will handle whether to output based on the log level
+  logger.debug('Request details:', {
+    method: req.method,
+    path: req.path,
+    query: req.query,
+    headers: {
+      'user-agent': req.headers['user-agent'],
+      'content-type': req.headers['content-type'],
+      'authorization': req.headers['authorization'] ? '[PRESENT]' : '[ABSENT]',
+      'x-company-id': req.headers['x-company-id']
+    }
+  });
   next();
 });
 
@@ -167,7 +184,8 @@ app.use((_req: Request, res: Response) => {
 
 // Error handler
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-  console.error(err.stack);
+  logger.error('Server error:', err);
+  logger.debug('Error stack:', err.stack);
   res.status(500).json({
     error: 'Internal Server Error',
     message: process.env.NODE_ENV === 'development' ? err.message : undefined

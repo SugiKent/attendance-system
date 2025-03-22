@@ -40,6 +40,8 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-attendanceapp}
       JWT_SECRET: ${JWT_SECRET:-your-secret-key}
       PORT: ${PORT:-5000}
+      DEBUG: "*"  # すべてのデバッグ出力を有効化
+      NODE_OPTIONS: "--no-warnings --enable-source-maps"
     volumes:
       - ./backend:/app
       - /app/node_modules
