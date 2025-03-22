@@ -20,35 +20,73 @@ dotenv.config();
 // Initialize Express app
 const app = express();
 
-// Initialize Prisma client with detailed logging
+// Initialize Prisma client with conditional logging based on LOG_LEVEL
+const isPrismaDebugEnabled = process.env.LOG_LEVEL === 'debug' || process.env.LOG_LEVEL === 'silly';
+const isPrismaVerboseEnabled = isPrismaDebugEnabled || process.env.LOG_LEVEL === 'verbose';
+
+// Prismaのログ設定を環境変数に基づいて調整
+const prismaLogConfig: any[] = [];
+
+// エラーは常にログに記録
+prismaLogConfig.push({
+  emit: 'event',
+  level: 'error',
+});
+
+// 警告は常にログに記録
+prismaLogConfig.push({
+  emit: 'event',
+  level: 'warn',
+});
+
+// verboseレベル以上の場合はinfoも記録
+if (isPrismaVerboseEnabled) {
+  prismaLogConfig.push({
+    emit: 'event',
+    level: 'info',
+  });
+}
+
+// debugレベル以上の場合はqueryも記録
+if (isPrismaDebugEnabled) {
+  prismaLogConfig.push({
+    emit: 'event',
+    level: 'query',
+  });
+}
+
 export const prisma = new PrismaClient({
-  log: [
-    {
-      emit: 'event',
-      level: 'query',
-    },
-    {
-      emit: 'event',
-      level: 'error',
-    },
-    {
-      emit: 'event',
-      level: 'info',
-    },
-    {
-      emit: 'event',
-      level: 'warn',
-    },
-  ],
+  log: prismaLogConfig,
 });
 
 // Prismaのイベントリスナーを設定
-prisma.$on('error', (e) => {
+// @ts-ignore - Prismaのイベントタイプが正確に定義されていない場合の対処
+prisma.$on('error', (e: any) => {
   logger.error('Prisma error:', e);
 });
 
-prisma.$on('query', (e) => {
+// @ts-ignore - Prismaのイベントタイプが正確に定義されていない場合の対処
+prisma.$on('warn', (e: any) => {
+  logger.warn('Prisma warning:', e);
+});
+
+// @ts-ignore - Prismaのイベントタイプが正確に定義されていない場合の対処
+prisma.$on('info', (e: any) => {
+  logger.info('Prisma info:', e);
+});
+
+// @ts-ignore - Prismaのイベントタイプが正確に定義されていない場合の対処
+prisma.$on('query', (e: any) => {
+  // クエリログは詳細すぎるため、デバッグレベルでのみ出力
   logger.debug('Prisma query:', e);
+});
+
+// Prismaのログレベル設定を表示
+logger.info('Prisma logging configuration:', {
+  error: true,
+  warn: true,
+  info: isPrismaVerboseEnabled,
+  query: isPrismaDebugEnabled
 });
 
 // データベース接続テスト
@@ -154,6 +192,26 @@ app.get('/', (_req: Request, res: Response) => {
 // Health check endpoint
 app.get('/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok' });
+});
+
+// デバッグログをテストするためのエンドポイント
+app.get('/debug-test', (_req: Request, res: Response) => {
+  logger.debug('デバッグテストエンドポイントが呼び出されました');
+  logger.info('これはinfoレベルのログです');
+  logger.warn('これはwarnレベルのログです');
+  logger.error('これはerrorレベルのログです');
+  
+  // オブジェクトのログ出力もテスト
+  logger.debug('デバッグオブジェクト:', { 
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV,
+    logLevel: process.env.LOG_LEVEL
+  });
+  
+  res.json({ 
+    message: 'デバッグログをコンソールで確認してください',
+    currentLogLevel: process.env.LOG_LEVEL || 'not set'
+  });
 });
 
 // API routes - レート制限をOPTIONSリクエスト以外に適用

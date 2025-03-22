@@ -1,3 +1,8 @@
+import dotenv from 'dotenv';
+
+// 環境変数を確実に読み込む
+dotenv.config();
+
 const LOG_LEVELS = {
   error: 0,
   warn: 1,
@@ -16,8 +21,11 @@ const currentLogLevel = (process.env.LOG_LEVEL as LogLevel) || 'info';
 // 現在のログレベル値を取得
 const currentLevelValue = LOG_LEVELS[currentLogLevel];
 
-// 起動時にログレベルを表示
-console.log(`Current log level: ${currentLogLevel} (${currentLevelValue})`);
+// 起動時にログレベルを表示（より目立つように）
+console.log('='.repeat(80));
+console.log(`LOGGER INITIALIZED - CURRENT LOG LEVEL: ${currentLogLevel.toUpperCase()} (${currentLevelValue})`);
+console.log(`LOG_LEVEL environment variable: ${process.env.LOG_LEVEL || 'not set (using default)'}`);
+console.log('='.repeat(80));
 
 // 各ログレベルの関数を作成
 const logger = {

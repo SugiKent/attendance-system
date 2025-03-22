@@ -30,6 +30,18 @@ try {
       platform: process.platform,
       memoryUsage: process.memoryUsage()
     });
+    
+    // 現在のログレベルを明示的に表示
+    logger.info(`Current log level from environment: ${process.env.LOG_LEVEL || 'not set'}`);
+    
+    // 定期的なデバッグログ出力を設定
+    setInterval(() => {
+      logger.debug('定期的なデバッグログ - アプリケーションは正常に動作しています', {
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        memoryUsage: process.memoryUsage()
+      });
+    }, 30000); // 30秒ごとに出力
   });
 
   // サーバーエラーハンドリング
