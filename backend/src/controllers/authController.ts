@@ -365,8 +365,18 @@ export const authController = {
   // 初期セットアップ（最初の管理者ユーザー作成）
   setupAdmin: async (req: Request, res: Response) => {
     try {
+      // リクエスト受信時のデバッグログ
+      logger.debug('管理者アカウント作成リクエスト受信:', {
+        ip: req.ip,
+        userAgent: req.headers['user-agent'],
+        method: req.method,
+        path: req.path,
+        body: { email: req.body.email, name: req.body.name }  // パスワードは記録しない
+      });
+
       // リクエストボディのバリデーション
       const validatedData = registerSchema.parse(req.body);
+      logger.debug('バリデーション成功:', { email: validatedData.email, name: validatedData.name });
       
       // 管理者ユーザーが既に存在するか確認
       const adminExists = await prisma.user.findFirst({
@@ -374,6 +384,7 @@ export const authController = {
       });
       
       if (adminExists) {
+        logger.info(`管理者ユーザー作成失敗: 管理者が既に存在します`);
         return res.status(403).json({
           status: 'error',
           message: '管理者ユーザーは既に存在します。このエンドポイントは使用できません。',
@@ -386,14 +397,19 @@ export const authController = {
       });
       
       if (existingUser) {
+        logger.info(`管理者ユーザー作成失敗: メールアドレス重複 - ${validatedData.email}`);
         return res.status(400).json({
           status: 'error',
           message: 'このメールアドレスは既に登録されています',
         });
       }
       
+      // 処理開始時のログ
+      logger.info(`管理者ユーザー作成処理開始: ${validatedData.email}`);
+      
       // パスワードのハッシュ化
       const hashedPassword = await bcrypt.hash(validatedData.password, 10);
+      logger.debug('パスワードハッシュ化完了');
       
       // 管理者ユーザーの作成
       const newAdmin = await prisma.user.create({
@@ -403,6 +419,16 @@ export const authController = {
           name: validatedData.name,
           role: 'ADMIN', // 管理者ロールを設定
         },
+      });
+      
+      // 処理成功時のログ
+      logger.info(`管理者ユーザー作成成功: ${newAdmin.email} (ID: ${newAdmin.id})`);
+      logger.debug('管理者ユーザー作成詳細:', {
+        userId: newAdmin.id,
+        email: newAdmin.email,
+        name: newAdmin.name,
+        role: newAdmin.role,
+        timestamp: new Date().toISOString()
       });
       
       // パスワードを除外したユーザー情報を返却
@@ -442,8 +468,18 @@ export const authController = {
   // ユーザー登録（管理者のみ実行可能）
   register: async (req: Request, res: Response) => {
     try {
+      // リクエスト受信時のデバッグログ
+      logger.debug('アカウント作成リクエスト受信:', {
+        ip: req.ip,
+        userAgent: req.headers['user-agent'],
+        method: req.method,
+        path: req.path,
+        body: { email: req.body.email, name: req.body.name }  // パスワードは記録しない
+      });
+
       // リクエストボディのバリデーション
       const validatedData = registerSchema.parse(req.body);
+      logger.debug('バリデーション成功:', { email: validatedData.email, name: validatedData.name });
       
       // メールアドレスの重複チェック
       const existingUser = await prisma.user.findFirst({
@@ -451,18 +487,26 @@ export const authController = {
       });
       
       if (existingUser) {
+        logger.info(`ユーザー登録失敗: メールアドレス重複 - ${validatedData.email}`);
         return res.status(400).json({
           status: 'error',
           message: 'このメールアドレスは既に登録されています',
         });
       }
       
+      // 処理開始時のログ
+      logger.info(`ユーザー登録処理開始: ${validatedData.email}`);
+      
       // パスワードのハッシュ化
       const hashedPassword = await bcrypt.hash(validatedData.password, 10);
+      logger.debug('パスワードハッシュ化完了');
       
       // 認証トークンの生成
       const verificationToken = generateVerificationToken();
       const verificationTokenExpiry = getVerificationTokenExpiry();
+      logger.debug('認証トークン生成完了', { 
+        tokenExpiry: verificationTokenExpiry.toISOString() 
+      });
       
       // ユーザーの作成
       const newUser = await prisma.user.create({
@@ -475,6 +519,17 @@ export const authController = {
           verificationToken,
           verificationTokenExpiry,
         },
+      });
+      
+      // 処理成功時のログ
+      logger.info(`ユーザー登録成功: ${newUser.email} (ID: ${newUser.id})`);
+      logger.debug('ユーザー登録詳細:', {
+        userId: newUser.id,
+        email: newUser.email,
+        name: newUser.name,
+        role: newUser.role,
+        isEmailVerified: newUser.isEmailVerified,
+        timestamp: new Date().toISOString()
       });
       
       // 認証メールを送信
@@ -532,8 +587,18 @@ export const authController = {
   // ログイン
   login: async (req: Request, res: Response) => {
     try {
+      // リクエスト受信時のデバッグログ
+      logger.debug('ログインリクエスト受信:', {
+        ip: req.ip,
+        userAgent: req.headers['user-agent'],
+        method: req.method,
+        path: req.path,
+        email: req.body.email  // パスワードは記録しない
+      });
+
       // リクエストボディのバリデーション
       const validatedData = loginSchema.parse(req.body);
+      logger.debug('バリデーション成功:', { email: validatedData.email });
       
       // ユーザーの検索
       const user = await prisma.user.findFirst({
@@ -541,6 +606,7 @@ export const authController = {
       });
       
       if (!user) {
+        logger.info(`ログイン失敗: ユーザーが存在しません - ${validatedData.email}`);
         return res.status(401).json({
           status: 'error',
           message: 'メールアドレスまたはパスワードが正しくありません',
@@ -554,6 +620,7 @@ export const authController = {
       );
       
       if (!isPasswordValid) {
+        logger.info(`ログイン失敗: パスワードが不正 - ${user.email} (ID: ${user.id})`);
         return res.status(401).json({
           status: 'error',
           message: 'メールアドレスまたはパスワードが正しくありません',
@@ -562,6 +629,7 @@ export const authController = {
       
       // メール認証チェック
       if (!user.isEmailVerified) {
+        logger.info(`ログイン失敗: メール未認証 - ${user.email} (ID: ${user.id})`);
         return res.status(403).json({
           status: 'error',
           message: 'メールアドレスが認証されていません。認証メールを確認してください。',
@@ -569,6 +637,15 @@ export const authController = {
           email: user.email,
         });
       }
+      
+      logger.info(`ログイン成功: ${user.email} (ID: ${user.id})`);
+      logger.debug('ログイン詳細:', {
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+        companyId: user.companyId,
+        timestamp: new Date().toISOString()
+      });
       
       // パスワードを除外したユーザー情報を返却
       const { password, ...userWithoutPassword } = user;
