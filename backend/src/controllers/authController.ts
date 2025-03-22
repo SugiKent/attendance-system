@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
 import { emailService } from '../services/emailService';
 import { passwordSchema } from '../utils/passwordUtils';
+import logger from '../utils/logger';
 
 // 入力バリデーションスキーマ
 const profileUpdateSchema = z.object({
@@ -128,7 +129,12 @@ export const authController = {
         });
       }
       
-      console.error('Verify email error:', error);
+      logger.error('Verify email error:', error);
+      logger.debug('Verify email error details:', { 
+        userId: req.body.userId,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       return res.status(500).json({
         status: 'error',
         message: 'メールアドレス認証中にエラーが発生しました',
@@ -196,7 +202,12 @@ export const authController = {
         });
       }
       
-      console.error('Resend verification error:', error);
+      logger.error('Resend verification error:', error);
+      logger.debug('Resend verification error details:', { 
+        email: req.body.email,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       return res.status(500).json({
         status: 'error',
         message: '認証メール再送信中にエラーが発生しました',
@@ -260,7 +271,13 @@ export const authController = {
         });
       }
       
-      console.error('Update profile error:', error);
+      logger.error('Update profile error:', error);
+      logger.debug('Update profile error details:', { 
+        userId: req.user?.id,
+        requestData: req.body,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       return res.status(500).json({
         status: 'error',
         message: 'プロフィール更新中にエラーが発生しました',
@@ -332,7 +349,12 @@ export const authController = {
         });
       }
       
-      console.error('Change password error:', error);
+      logger.error('Change password error:', error);
+      logger.debug('Change password error details:', { 
+        userId: req.user?.id,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       return res.status(500).json({
         status: 'error',
         message: 'パスワード変更中にエラーが発生しました',
@@ -404,7 +426,12 @@ export const authController = {
         });
       }
       
-      console.error('Setup admin error:', error);
+      logger.error('Setup admin error:', error);
+      logger.debug('Setup admin error details:', { 
+        requestData: { email: req.body.email, name: req.body.name },
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       return res.status(500).json({
         status: 'error',
         message: '管理者ユーザー作成中にエラーが発生しました',
@@ -452,16 +479,22 @@ export const authController = {
       
       // 認証メールを送信
       try {
-        console.log(`ユーザー登録: 認証メール送信を開始します - ${newUser.email}`);
+        logger.info(`ユーザー登録: 認証メール送信を開始します - ${newUser.email}`);
         await emailService.sendVerificationEmail({
           to: newUser.email,
           userName: newUser.name,
           verificationToken,
           userId: newUser.id
         });
-        console.log(`ユーザー登録: 認証メール送信が完了しました - ${newUser.email}`);
+        logger.info(`ユーザー登録: 認証メール送信が完了しました - ${newUser.email}`);
       } catch (emailError) {
-        console.error(`ユーザー登録: 認証メール送信に失敗しました - ${newUser.email}`, emailError);
+        logger.error(`ユーザー登録: 認証メール送信に失敗しました - ${newUser.email}`, emailError);
+        logger.debug('Email sending error details:', {
+          userId: newUser.id,
+          email: newUser.email,
+          errorMessage: emailError instanceof Error ? emailError.message : 'Unknown error',
+          stack: emailError instanceof Error ? emailError.stack : undefined
+        });
         // エラーが発生してもユーザー作成自体は継続する
       }
       
@@ -483,7 +516,12 @@ export const authController = {
         });
       }
       
-      console.error('Register error:', error);
+      logger.error('Register error:', error);
+      logger.debug('Register error details:', { 
+        requestData: { email: req.body.email, name: req.body.name },
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       return res.status(500).json({
         status: 'error',
         message: 'ユーザー登録中にエラーが発生しました',
@@ -553,7 +591,12 @@ export const authController = {
         });
       }
       
-      console.error('Login error:', error);
+      logger.error('Login error:', error);
+      logger.debug('Login error details:', { 
+        email: req.body.email,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       return res.status(500).json({
         status: 'error',
         message: 'ログイン中にエラーが発生しました',
@@ -594,7 +637,12 @@ export const authController = {
         data: userWithoutPassword,
       });
     } catch (error) {
-      console.error('Get current user error:', error);
+      logger.error('Get current user error:', error);
+      logger.debug('Get current user error details:', { 
+        userId: req.user?.id,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       return res.status(500).json({
         status: 'error',
         message: 'ユーザー情報の取得中にエラーが発生しました',

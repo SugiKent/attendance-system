@@ -12,3 +12,7 @@ numReplicas = 1
 
 [nixpacks]
 workdir = "backend"
+
+[variables]
+NODE_ENV = "production"
+LOG_LEVEL = "debug"

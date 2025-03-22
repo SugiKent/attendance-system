@@ -4,6 +4,7 @@ import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import logger from './utils/logger';
 
 // Import routes
 import authRoutes from './routes/authRoutes';
@@ -19,45 +20,87 @@ dotenv.config();
 // Initialize Express app
 const app = express();
 
-// Initialize Prisma client with detailed logging
+// Initialize Prisma client with conditional logging based on LOG_LEVEL
+const isPrismaDebugEnabled = process.env.LOG_LEVEL === 'debug' || process.env.LOG_LEVEL === 'silly';
+const isPrismaVerboseEnabled = isPrismaDebugEnabled || process.env.LOG_LEVEL === 'verbose';
+
+// Prismaのログ設定を環境変数に基づいて調整
+const prismaLogConfig: any[] = [];
+
+// エラーは常にログに記録
+prismaLogConfig.push({
+  emit: 'event',
+  level: 'error',
+});
+
+// 警告は常にログに記録
+prismaLogConfig.push({
+  emit: 'event',
+  level: 'warn',
+});
+
+// verboseレベル以上の場合はinfoも記録
+if (isPrismaVerboseEnabled) {
+  prismaLogConfig.push({
+    emit: 'event',
+    level: 'info',
+  });
+}
+
+// debugレベル以上の場合はqueryも記録
+if (isPrismaDebugEnabled) {
+  prismaLogConfig.push({
+    emit: 'event',
+    level: 'query',
+  });
+}
+
 export const prisma = new PrismaClient({
-  log: [
-    {
-      emit: 'event',
-      level: 'query',
-    },
-    {
-      emit: 'event',
-      level: 'error',
-    },
-    {
-      emit: 'event',
-      level: 'info',
-    },
-    {
-      emit: 'event',
-      level: 'warn',
-    },
-  ],
+  log: prismaLogConfig,
 });
 
 // Prismaのイベントリスナーを設定
-prisma.$on('error', (e) => {
-  console.error('Prisma error:', e);
+// @ts-ignore - Prismaのイベントタイプが正確に定義されていない場合の対処
+prisma.$on('error', (e: any) => {
+  logger.error('Prisma error:', e);
 });
 
-prisma.$on('query', (e) => {
-  console.log('Prisma query:', e);
+// @ts-ignore - Prismaのイベントタイプが正確に定義されていない場合の対処
+prisma.$on('warn', (e: any) => {
+  logger.warn('Prisma warning:', e);
+});
+
+// @ts-ignore - Prismaのイベントタイプが正確に定義されていない場合の対処
+prisma.$on('info', (e: any) => {
+  logger.info('Prisma info:', e);
+});
+
+// @ts-ignore - Prismaのイベントタイプが正確に定義されていない場合の対処
+prisma.$on('query', (e: any) => {
+  // クエリログは詳細すぎるため、デバッグレベルでのみ出力
+  logger.debug('Prisma query:', e);
+});
+
+// Prismaのログレベル設定を表示
+logger.info('Prisma logging configuration:', {
+  error: true,
+  warn: true,
+  info: isPrismaVerboseEnabled,
+  query: isPrismaDebugEnabled
 });
 
 // データベース接続テスト
 async function testDatabaseConnection() {
   try {
-    console.log('Testing database connection...');
+    logger.info('Testing database connection...');
     await prisma.$connect();
-    console.log('Database connection successful');
+    logger.info('Database connection successful');
+    logger.debug('Database connection details:', { 
+      url: process.env.DATABASE_URL?.replace(/:[^:@]*@/, ':****@'),
+      provider: 'postgresql'
+    });
   } catch (error) {
-    console.error('Database connection failed:', error);
+    logger.error('Database connection failed:', error);
     // プロセスを終了しない - エラーをログに記録するだけ
   }
 }
@@ -125,7 +168,19 @@ const authLimiter = rateLimit({
 
 // Logging middleware
 app.use((req: Request, _res: Response, next: NextFunction) => {
-  console.log(`${req.method} ${req.path}`);
+  logger.http(`${req.method} ${req.path}`);
+  // Always call debug - the logger will handle whether to output based on the log level
+  logger.debug('Request details:', {
+    method: req.method,
+    path: req.path,
+    query: req.query,
+    headers: {
+      'user-agent': req.headers['user-agent'],
+      'content-type': req.headers['content-type'],
+      'authorization': req.headers['authorization'] ? '[PRESENT]' : '[ABSENT]',
+      'x-company-id': req.headers['x-company-id']
+    }
+  });
   next();
 });
 
@@ -137,6 +192,26 @@ app.get('/', (_req: Request, res: Response) => {
 // Health check endpoint
 app.get('/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok' });
+});
+
+// デバッグログをテストするためのエンドポイント
+app.get('/debug-test', (_req: Request, res: Response) => {
+  logger.debug('デバッグテストエンドポイントが呼び出されました');
+  logger.info('これはinfoレベルのログです');
+  logger.warn('これはwarnレベルのログです');
+  logger.error('これはerrorレベルのログです');
+  
+  // オブジェクトのログ出力もテスト
+  logger.debug('デバッグオブジェクト:', { 
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV,
+    logLevel: process.env.LOG_LEVEL
+  });
+  
+  res.json({ 
+    message: 'デバッグログをコンソールで確認してください',
+    currentLogLevel: process.env.LOG_LEVEL || 'not set'
+  });
 });
 
 // API routes - レート制限をOPTIONSリクエスト以外に適用
@@ -167,7 +242,8 @@ app.use((_req: Request, res: Response) => {
 
 // Error handler
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-  console.error(err.stack);
+  logger.error('Server error:', err);
+  logger.debug('Error stack:', err.stack);
   res.status(500).json({
     error: 'Internal Server Error',
     message: process.env.NODE_ENV === 'development' ? err.message : undefined
