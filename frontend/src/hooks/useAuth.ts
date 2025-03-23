@@ -15,7 +15,7 @@ export const useAuth = () => {
   };
 
   // ユーザー登録（一般ユーザー向け）
-  const handleRegister = async (email: string, password: string, name: string, isAdmin = false) => {
+  const handleRegister = async (email: string, password: string, name: string, isAdmin = false, companyId?: string | null) => {
     setIsSubmitting(true);
     setError(null);
     
@@ -25,12 +25,21 @@ export const useAuth = () => {
         // TEMP-DEBUG-F: アカウント登録フロー確認用（後で削除）
         console.log('[TEMP-DEBUG-F] [アカウント登録] ステップ5: 管理者による登録処理開始 - メールアドレス:', email);
         
+        // 管理者の場合、自分の所属企業を取得
+        const currentUser = useAuthStore.getState().user;
+        
+        // スーパー管理者でない場合は、自分の所属企業を設定
+        if (currentUser?.role !== 'SUPER_ADMIN' && currentUser?.companyId) {
+          companyId = currentUser.companyId;
+        }
+        
         // 管理者による登録（管理者ダッシュボードから）
         const response = await adminApi.createUser({
           email,
           password,
           name,
           role: 'EMPLOYEE', // デフォルトは一般ユーザー
+          companyId: companyId || undefined,
         });
         
         if (response.status === 'success') {

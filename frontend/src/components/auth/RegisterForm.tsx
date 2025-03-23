@@ -1,8 +1,9 @@
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { useAuthStore } from '../../store/authStore';
+import { useAuthStore, Company } from '../../store/authStore';
 import PasswordStrengthMeter from '../common/PasswordStrengthMeter';
+import { companyApi } from '../../services/companyApi';
 
 interface RegisterFormProps {
   onSuccess?: () => void;
@@ -15,8 +16,37 @@ const RegisterForm = ({ onSuccess, isAdminForm = false }: RegisterFormProps) => 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [companyId, setCompanyId] = useState<string | null>(null);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [isLoadingCompanies, setIsLoadingCompanies] = useState(false);
   const { handleRegister, isSubmitting } = useAuth();
   const error = useAuthStore((state) => state.error);
+  const currentUser = useAuthStore((state) => state.user);
+  
+  // スーパー管理者かどうかを判定
+  const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
+  
+  // 管理者フォームでスーパー管理者の場合のみ企業一覧を取得
+  useEffect(() => {
+    if (isAdminForm && isSuperAdmin) {
+      fetchCompanies();
+    }
+  }, [isAdminForm, isSuperAdmin]);
+  
+  // 企業一覧を取得する関数
+  const fetchCompanies = async () => {
+    setIsLoadingCompanies(true);
+    try {
+      const response = await companyApi.getCompanies();
+      if (response.status === 'success') {
+        setCompanies(response.data);
+      }
+    } catch (error) {
+      console.error('企業一覧の取得に失敗しました:', error);
+    } finally {
+      setIsLoadingCompanies(false);
+    }
+  };
 
   const validatePassword = () => {
     if (password !== confirmPassword) {
@@ -75,7 +105,7 @@ const RegisterForm = ({ onSuccess, isAdminForm = false }: RegisterFormProps) => 
     // TEMP-DEBUG-F: アカウント登録フロー確認用（後で削除）
     console.log('[TEMP-DEBUG-F] [アカウント登録] ステップ5: 登録ボタン押下 - メールアドレス:', email);
     
-    const success = await handleRegister(email, password, name, isAdminForm);
+    const success = await handleRegister(email, password, name, isAdminForm, companyId);
     
     if (success && onSuccess) {
       // TEMP-DEBUG-F: アカウント登録フロー確認用（後で削除）
@@ -183,6 +213,32 @@ const RegisterForm = ({ onSuccess, isAdminForm = false }: RegisterFormProps) => 
             <p className="text-red-500 text-xs italic mt-1">{passwordError}</p>
           )}
         </div>
+
+        {/* スーパー管理者の場合のみ企業選択ドロップダウンを表示 */}
+        {isAdminForm && isSuperAdmin && (
+          <div className="mb-4">
+            <label htmlFor="companyId" className="block text-gray-700 text-sm font-bold mb-2">
+              所属企業
+            </label>
+            <select
+              id="companyId"
+              value={companyId || ''}
+              onChange={(e) => setCompanyId(e.target.value || null)}
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              disabled={isLoadingCompanies}
+            >
+              <option value="">-- 企業を選択 --</option>
+              {companies.map((company) => (
+                <option key={company.id} value={company.id}>
+                  {company.name}
+                </option>
+              ))}
+            </select>
+            {isLoadingCompanies && (
+              <p className="text-sm text-gray-500 mt-1">企業情報を読み込み中...</p>
+            )}
+          </div>
+        )}
 
         <div className="flex items-center justify-between">
           <button
