@@ -306,6 +306,9 @@ export const emailService = {
     userId
   }: VerificationEmailParams): Promise<any> => {
     try {
+      // TEMP-DEBUG: アカウント登録フロー確認用（後で削除）
+      logger.info('[TEMP-DEBUG] [アカウント登録] ステップ6: 認証メール送信処理 - メールアドレス: ' + to);
+      
       logger.info(`認証メール送信開始 - 宛先: ${to}, ユーザーID: ${userId}`);
       logger.debug('認証メール送信詳細:', {
         to,
@@ -331,11 +334,16 @@ export const emailService = {
       });
       
       // Send email
-      return await emailService.sendEmail({
+      const result = await emailService.sendEmail({
         to,
         subject: 'メールアドレスの認証',
         html
       });
+      
+      // TEMP-DEBUG: アカウント登録フロー確認用（後で削除）
+      logger.info('[TEMP-DEBUG] [アカウント登録] ステップ6: 認証メール送信完了 - ユーザーID: ' + userId);
+      
+      return result;
     } catch (error) {
       logger.error('Verification email sending error:', error);
       logger.debug('Verification email sending error details:', {

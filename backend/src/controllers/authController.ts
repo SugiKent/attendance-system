@@ -468,6 +468,9 @@ export const authController = {
   // ユーザー登録（管理者のみ実行可能）
   register: async (req: Request, res: Response) => {
     try {
+      // TEMP-DEBUG: アカウント登録フロー確認用（後で削除）
+      logger.info('[TEMP-DEBUG] [アカウント登録] ステップ5: 登録処理開始 - 管理者ID: ' + req.user?.id);
+      
       // リクエスト受信時のデバッグログ
       logger.debug('アカウント作成リクエスト受信:', {
         ip: req.ip,
@@ -523,6 +526,9 @@ export const authController = {
       
       // 処理成功時のログ
       logger.info(`ユーザー登録成功: ${newUser.email} (ID: ${newUser.id})`);
+      // TEMP-DEBUG: アカウント登録フロー確認用（後で削除）
+      logger.info('[TEMP-DEBUG] [アカウント登録] ステップ5: 登録処理成功 - ユーザーID: ' + newUser.id);
+      
       logger.debug('ユーザー登録詳細:', {
         userId: newUser.id,
         email: newUser.email,
@@ -534,6 +540,9 @@ export const authController = {
       
       // 認証メールを送信
       try {
+        // TEMP-DEBUG: アカウント登録フロー確認用（後で削除）
+        logger.info('[TEMP-DEBUG] [アカウント登録] ステップ6: 認証メール送信開始 - メールアドレス: ' + newUser.email);
+        
         logger.info(`ユーザー登録: 認証メール送信を開始します - ${newUser.email}`);
         await emailService.sendVerificationEmail({
           to: newUser.email,
@@ -542,6 +551,9 @@ export const authController = {
           userId: newUser.id
         });
         logger.info(`ユーザー登録: 認証メール送信が完了しました - ${newUser.email}`);
+        
+        // TEMP-DEBUG: アカウント登録フロー確認用（後で削除）
+        logger.info('[TEMP-DEBUG] [アカウント登録] ステップ6: 認証メール送信成功 - ユーザーID: ' + newUser.id);
       } catch (emailError) {
         logger.error(`ユーザー登録: 認証メール送信に失敗しました - ${newUser.email}`, emailError);
         logger.debug('Email sending error details:', {
@@ -555,6 +567,9 @@ export const authController = {
       
       // パスワードを除外したユーザー情報を返却
       const { password, ...userWithoutPassword } = newUser;
+      
+      // TEMP-DEBUG: アカウント登録フロー確認用（後で削除）
+      logger.info('[TEMP-DEBUG] [アカウント登録] ステップ7: アカウント登録プロセス完了 - ユーザーID: ' + newUser.id);
       
       return res.status(201).json({
         status: 'success',
@@ -587,6 +602,9 @@ export const authController = {
   // ログイン
   login: async (req: Request, res: Response) => {
     try {
+      // TEMP-DEBUG: アカウント登録フロー確認用（後で削除）
+      logger.info('[TEMP-DEBUG] [アカウント登録] ステップ1: ログイン試行 - メールアドレス: ' + req.body.email);
+      
       // リクエスト受信時のデバッグログ
       logger.debug('ログインリクエスト受信:', {
         ip: req.ip,
@@ -639,6 +657,11 @@ export const authController = {
       }
       
       logger.info(`ログイン成功: ${user.email} (ID: ${user.id})`);
+      
+      // TEMP-DEBUG: アカウント登録フロー確認用（後で削除）
+      if (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN') {
+        logger.info('[TEMP-DEBUG] [アカウント登録] ステップ1: スーパー管理者/管理者ログイン成功 - ユーザーID: ' + user.id);
+      }
       logger.debug('ログイン詳細:', {
         userId: user.id,
         email: user.email,
