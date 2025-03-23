@@ -232,6 +232,7 @@ export const adminController = {
           password: hashedPassword,
           name: validatedData.name,
           role: validatedData.role as any,
+          companyId: validatedData.companyId,
         },
       });
       
