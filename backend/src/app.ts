@@ -205,7 +205,9 @@ app.get('/debug-test', (_req: Request, res: Response) => {
   logger.debug('デバッグオブジェクト:', { 
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV,
-    logLevel: process.env.LOG_LEVEL
+    logLevel: process.env.LOG_LEVEL,
+    aws_region: process.env.AWS_REGION,
+    aws_access_key: process.env.AWS_ACCESS_KEY_ID
   });
   
   res.json({ 
