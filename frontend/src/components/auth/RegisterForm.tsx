@@ -72,9 +72,15 @@ const RegisterForm = ({ onSuccess, isAdminForm = false }: RegisterFormProps) => 
       return;
     }
     
+    // TEMP-DEBUG: アカウント登録フロー確認用（後で削除）
+    console.log('[TEMP-DEBUG] [アカウント登録] ステップ5: 登録ボタン押下 - メールアドレス:', email);
+    
     const success = await handleRegister(email, password, name, isAdminForm);
     
     if (success && onSuccess) {
+      // TEMP-DEBUG: アカウント登録フロー確認用（後で削除）
+      console.log('[TEMP-DEBUG] [アカウント登録] ステップ6: 登録処理成功');
+      
       onSuccess();
       // 管理者フォームの場合はフォームをリセット
       if (isAdminForm) {

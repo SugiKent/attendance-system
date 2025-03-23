@@ -78,6 +78,8 @@ const UserManagementPage = () => {
 
   // コンポーネントマウント時にユーザー一覧を取得
   useEffect(() => {
+    // TEMP-DEBUG: アカウント登録フロー確認用（後で削除）
+    console.log('[TEMP-DEBUG] [アカウント登録] ステップ3: ユーザー管理画面への遷移成功 - ユーザーID:', currentUser?.id);
     fetchUsers();
   }, []);
 
@@ -193,6 +195,9 @@ const UserManagementPage = () => {
 
   // ユーザー登録が完了したときの処理
   const handleRegisterSuccess = () => {
+    // TEMP-DEBUG: アカウント登録フロー確認用（後で削除）
+    console.log('[TEMP-DEBUG] [アカウント登録] ステップ7: アカウント登録プロセス完了');
+    
     setShowRegisterForm(false);
     // ユーザー一覧を再取得
     fetchUsers();
@@ -212,7 +217,13 @@ const UserManagementPage = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">ユーザー管理</h1>
         <button
-          onClick={() => setShowRegisterForm(!showRegisterForm)}
+          onClick={() => {
+            // TEMP-DEBUG: アカウント登録フロー確認用（後で削除）
+            if (!showRegisterForm) {
+              console.log('[TEMP-DEBUG] [アカウント登録] ステップ4: 新規ユーザー登録フォーム表示 - 管理者ID:', currentUser?.id);
+            }
+            setShowRegisterForm(!showRegisterForm);
+          }}
           className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
         >
           {showRegisterForm ? 'キャンセル' : '新規ユーザー登録'}
