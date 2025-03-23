@@ -22,8 +22,8 @@ export const useAuth = () => {
     try {
       // 管理者による登録か一般ユーザーによる登録かで分岐
       if (isAdmin) {
-        // TEMP-DEBUG: アカウント登録フロー確認用（後で削除）
-        console.log('[TEMP-DEBUG] [アカウント登録] ステップ5: 管理者による登録処理開始 - メールアドレス:', email);
+        // TEMP-DEBUG-F: アカウント登録フロー確認用（後で削除）
+        console.log('[TEMP-DEBUG-F] [アカウント登録] ステップ5: 管理者による登録処理開始 - メールアドレス:', email);
         
         // 管理者による登録（管理者ダッシュボードから）
         const response = await adminApi.createUser({
@@ -34,8 +34,8 @@ export const useAuth = () => {
         });
         
         if (response.status === 'success') {
-          // TEMP-DEBUG: アカウント登録フロー確認用（後で削除）
-          console.log('[TEMP-DEBUG] [アカウント登録] ステップ5: 管理者による登録処理成功 - ユーザーID:', response.data.id);
+          // TEMP-DEBUG-F: アカウント登録フロー確認用（後で削除）
+          console.log('[TEMP-DEBUG-F] [アカウント登録] ステップ5: 管理者による登録処理成功 - ユーザーID:', response.data.id);
           return true;
         }
       } else {
@@ -53,8 +53,8 @@ export const useAuth = () => {
       
       return false;
     } catch (error: any) {
-      // TEMP-DEBUG: アカウント登録フロー確認用（後で削除）
-      console.error('[TEMP-DEBUG] [アカウント登録] ステップ5: 登録処理エラー:', error);
+      // TEMP-DEBUG-F: アカウント登録フロー確認用（後で削除）
+      console.error('[TEMP-DEBUG-F] [アカウント登録] ステップ5: 登録処理エラー:', error);
       
       // エラーメッセージの設定
       const errorMessage =
@@ -72,13 +72,13 @@ export const useAuth = () => {
     setError(null);
     
     try {
-      // TEMP-DEBUG: アカウント登録フロー確認用（後で削除）
-      console.log('[TEMP-DEBUG] [アカウント登録] ステップ1: ログイン試行 - メールアドレス:', email);
+      // TEMP-DEBUG-F: アカウント登録フロー確認用（後で削除）
+      console.log('[TEMP-DEBUG-F] [アカウント登録] ステップ1: ログイン試行 - メールアドレス:', email);
       
       const response = await authApi.login(email, password);
       if (response.status === 'success') {
-        // TEMP-DEBUG: アカウント登録フロー確認用（後で削除）
-        console.log('[TEMP-DEBUG] [アカウント登録] ステップ1: ログイン成功 - ユーザーID:', response.data.user.id);
+        // TEMP-DEBUG-F: アカウント登録フロー確認用（後で削除）
+        console.log('[TEMP-DEBUG-F] [アカウント登録] ステップ1: ログイン成功 - ユーザーID:', response.data.user.id);
         
         // ユーザーの企業情報を取得（企業IDがある場合）
         let company: Company | null = null;
@@ -96,9 +96,9 @@ export const useAuth = () => {
         // ユーザー情報、企業情報、トークンを保存
         login(response.data.user, company, response.data.token);
         
-        // TEMP-DEBUG: アカウント登録フロー確認用（後で削除）
+        // TEMP-DEBUG-F: アカウント登録フロー確認用（後で削除）
         if (response.data.user.role === 'SUPER_ADMIN' || response.data.user.role === 'ADMIN') {
-          console.log('[TEMP-DEBUG] [アカウント登録] ステップ2: 管理者画面への遷移開始');
+          console.log('[TEMP-DEBUG-F] [アカウント登録] ステップ2: 管理者画面への遷移開始');
         }
         
         // ダッシュボードにリダイレクト
@@ -106,8 +106,8 @@ export const useAuth = () => {
         return true;
       }
     } catch (error: any) {
-      // TEMP-DEBUG: アカウント登録フロー確認用（後で削除）
-      console.error('[TEMP-DEBUG] [アカウント登録] ステップ1: ログイン失敗:', error);
+      // TEMP-DEBUG-F: アカウント登録フロー確認用（後で削除）
+      console.error('[TEMP-DEBUG-F] [アカウント登録] ステップ1: ログイン失敗:', error);
       
       // エラーメッセージの設定
       const errorMessage =
