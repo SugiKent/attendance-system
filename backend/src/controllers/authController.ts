@@ -23,6 +23,7 @@ const registerSchema = z.object({
   email: z.string().email('有効なメールアドレスを入力してください'),
   password: passwordSchema,
   name: z.string().min(1, '名前は必須です'),
+  companyId: z.string().optional(),
 });
 
 const loginSchema = z.object({
@@ -511,6 +512,21 @@ export const authController = {
         tokenExpiry: verificationTokenExpiry.toISOString() 
       });
       
+      // 企業IDの設定
+      let companyId = undefined;
+      
+      // リクエスト元が管理者の場合
+      if (req.user) {
+        // スーパー管理者の場合は指定された企業IDを使用
+        if (req.user.role === 'SUPER_ADMIN' && validatedData.companyId) {
+          companyId = validatedData.companyId;
+        } 
+        // 管理者の場合は自分の所属企業を設定
+        else if (req.user.role === 'ADMIN' && req.user.companyId) {
+          companyId = req.user.companyId;
+        }
+      }
+      
       // ユーザーの作成
       const newUser = await prisma.user.create({
         data: {
@@ -521,6 +537,7 @@ export const authController = {
           isEmailVerified: false,
           verificationToken,
           verificationTokenExpiry,
+          companyId,
         },
       });
       
