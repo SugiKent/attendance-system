@@ -2,7 +2,7 @@
 
 # Install PostgreSQL
 sudo apt-get update
-sudo apt-get install -y postgresql postgresql-contrib
+sudo apt-get install -y postgresql-15 postgresql-client-15
 
 # Configure PostgreSQL
 sudo -u postgres psql -c "CREATE DATABASE attendancedb;"
