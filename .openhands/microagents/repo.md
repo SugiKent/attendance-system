@@ -16,6 +16,7 @@ Description: ポケット勤怠のリポジトリ
 - tmux を用いて作業をする
 - 作業中 make run で起動したプロセスは tmux の window で起動し続ける
 - 追加でターミナルで行いたい作業は tmux で新たな window を作って行う
+- systemctl は使えないです
 
 ### 1. 依存関係のインストール
 ```bash
