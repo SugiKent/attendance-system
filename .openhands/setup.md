@@ -1,5 +1,0 @@
-- PostgreSQL を install する
-- PostgreSQL の準備をして `postgresql://postgres:postgres@localhost:5432/attendancedb` で接続できるようにする
-- backend/.env を backend/.env.example からコピーして作る（内容は変えない）
-- `make build` で環境のセットアップ
-- `make run` で backend と frontend を起動する
