@@ -6,10 +6,11 @@ agent: CodeActAgent
 triggers:
 - setup
 - start
+- 開発環境の立ち上げ
 ---
 
 Repository: attendance-system
-Description: ポケット勤怠のリポジトリ
+Description: ポケット勤怠
 
 ### 前提
 
@@ -20,26 +21,14 @@ Description: ポケット勤怠のリポジトリ
 
 ### 1. 依存関係のインストール
 ```bash
-sh .openhands/setup.sh  # PostgreSQLなどシステム依存関係のインストール
-make build              # フロントエンド/バックエンドの依存関係インストール
-```
-
-### 2. データベース設定
-```bash
-# PostgreSQL認証設定変更
-sudo sed -i 's/peer/md5/g' /etc/postgresql/15/main/pg_hba.conf
-sudo service postgresql restart
-
-# データベース作成とマイグレーション
-cd backend
-npx prisma migrate dev --name init
-npx prisma db seed
+tmux new-session -d -s setup "cd /workspace/attendance-system && sh .openhands/setup.sh"
 ```
 
 ## 3. 開発サーバー起動
 
 ```bash
-make run
+tmux new-session -d -s backend "cd /workspace/attendance-system/backend && npm run dev"
+tmux new-session -d -s frontend "cd /workspace/attendance-system/frontend && npm run dev"
 ```
 
 ## 4. 初期アクセス
