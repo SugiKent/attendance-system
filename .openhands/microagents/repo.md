@@ -11,13 +11,19 @@ triggers:
 Repository: attendance-system
 Description: ポケット勤怠のリポジトリ
 
-### 2. 依存関係のインストール
+### 前提
+
+- tmux を用いて作業をする
+- 作業中 make run で起動したプロセスは tmux の window で起動し続ける
+- 追加でターミナルで行いたい作業は tmux で新たな window を作って行う
+
+### 1. 依存関係のインストール
 ```bash
 sh .openhands/setup.sh  # PostgreSQLなどシステム依存関係のインストール
 make build              # フロントエンド/バックエンドの依存関係インストール
 ```
 
-### 3. データベース設定
+### 2. データベース設定
 ```bash
 # PostgreSQL認証設定変更
 sudo sed -i 's/peer/md5/g' /etc/postgresql/15/main/pg_hba.conf
@@ -29,13 +35,13 @@ npx prisma migrate dev --name init
 npx prisma db seed
 ```
 
-## 開発サーバー起動
+## 3. 開発サーバー起動
 
 ```bash
 make run
 ```
 
-## 初期アクセス
+## 4. 初期アクセス
 - フロントエンド: http://localhost:5173
 - バックエンドAPI: http://localhost:5000
 
