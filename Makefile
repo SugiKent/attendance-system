@@ -7,7 +7,7 @@ run: run-backend run-frontend
 
 # バックエンドのセットアップ
 build-backend:
-	cd backend && npm install && npx prisma migrate dev
+	cd backend && npm install && npx prisma generate
 
 # フロントエンドのセットアップ
 build-frontend:
