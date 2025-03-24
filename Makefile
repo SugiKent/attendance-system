@@ -11,7 +11,7 @@ build-backend:
 
 # フロントエンドのセットアップ
 build-frontend:
-	cd frontend && npm install && cp .env.example .env
+	cd frontend && npm install
 
 # バックエンドの実行
 run-backend:
